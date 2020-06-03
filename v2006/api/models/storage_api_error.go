@@ -27,21 +27,24 @@ package models
 
 
 
-// This response should be returned by the service when handling: GET https://api.aspose.cloud/v4.0/words/Test.doc/sections.
-type SectionLinkCollectionResponse struct {
+// Error
+type StorageApiError struct {
 
-	// Gets or sets request Id.
-	RequestId string `json:"RequestId,omitempty"`
+	// Code             
+	Code string `json:"Code,omitempty"`
 
-	Sections *SectionLinkCollection `json:"Sections,omitempty"`
+	// Message             
+	Message string `json:"Message,omitempty"`
+
+	// Description             
+	Description string `json:"Description,omitempty"`
+
+	InnerError *ErrorDetails `json:"InnerError,omitempty"`
 }
 
-type ISectionLinkCollectionResponse interface {
-	IsSectionLinkCollectionResponse() bool
+type IStorageApiError interface {
+	IsStorageApiError() bool
 }
-func (SectionLinkCollectionResponse) IsSectionLinkCollectionResponse() bool {
-	return true;
-}
-func (SectionLinkCollectionResponse) IsWordsResponse() bool {
+func (StorageApiError) IsStorageApiError() bool {
 	return true;
 }
