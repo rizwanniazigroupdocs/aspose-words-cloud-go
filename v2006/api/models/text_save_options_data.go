@@ -60,6 +60,9 @@ type TextSaveOptionsData struct {
     ZipOutput bool `json:"ZipOutput,omitempty"`
 
     // Container class for text save options.
+    AddBidiMarks bool `json:"AddBidiMarks,omitempty"`
+
+    // Container class for text save options.
     Encoding string `json:"Encoding,omitempty"`
 
     // Container class for text save options.
@@ -70,9 +73,6 @@ type TextSaveOptionsData struct {
 
     // Container class for text save options.
     ParagraphBreak string `json:"ParagraphBreak,omitempty"`
-
-    // Container class for text save options.
-    AddBidiMarks bool `json:"AddBidiMarks,omitempty"`
 
     // Container class for text save options.
     PreserveTableLayout bool `json:"PreserveTableLayout,omitempty"`
@@ -88,6 +88,6 @@ func (TextSaveOptionsData) IsTextSaveOptionsData() bool {
     return true
 }
 
-func (TextSaveOptionsData) IsTxtSaveOptionsBaseData() bool {
+func (TextSaveOptionsData) IsSaveOptionsData() bool {
     return true
 }
