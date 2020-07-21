@@ -71,6 +71,9 @@ func Test_AppendDocument_AppendDocumentOnline(t *testing.T) {
     client, ctx := PrepareTest(t, config)
     remoteDataFolder := remoteBaseTestDataFolder + "/DocumentActions/AppendDocument"
     localFile := "Common/test_multi_pages.docx"
+    remoteFileName := "TestAppendDocument.docx"
+
+    UploadNextFileToStorage(t, ctx, client, GetLocalFile(localFile), remoteDataFolder + "/" + remoteFileName)
 
     requestDocumentListDocumentEntries0 := models.DocumentEntry{
         Href: remoteDataFolder + "/" + remoteFileName,
