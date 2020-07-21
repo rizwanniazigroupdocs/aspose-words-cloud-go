@@ -174,7 +174,7 @@ func (a *WordsApiService) AcceptAllRevisions(ctx context.Context, name string, l
 /* WordsApiService Appends documents to original document.
  * @param ctx context.Context for authentication, logging, tracing, etc.
  @param name Original document name.
- @param documentList DocumentEntryList with a list of documents to append.
+ @param documentList <see cref="DocumentEntryList"/> with a list of documents to append.
  @param optional (nil or map[string]interface{}) with one or more of:
      @param "folder" (string) Original document folder.
      @param "storage" (string) Original document storage.
@@ -314,6 +314,88 @@ func (a *WordsApiService) AppendDocument(ctx context.Context, name string, docum
     }
 
     return successPayload, localVarHttpResponse, err
+}
+/* WordsApiService Appends documents to original document.
+ * @param ctx context.Context for authentication, logging, tracing, etc.
+ @param document The document.
+ @param documentList <see cref="DocumentEntryList"/> with a list of documents to append.
+@return *os.File*/
+func (a *WordsApiService) AppendDocumentOnline(ctx context.Context, document *os.File, documentList models.IDocumentEntryList) (*http.Response, error) {
+    var (
+        localVarHttpMethod = strings.ToUpper("put")
+        localVarPostBody interface{}
+    )
+
+    // create path and map variables
+    localVarPath := "/words/online/appendDocument"
+
+    localVarPath = strings.Replace(localVarPath, "/<nil>", "", -1)
+    localVarPath = a.client.cfg.BaseUrl + strings.Replace(localVarPath, "//", "/", -1)
+
+    localVarHeaderParams := make(map[string]string)
+    localVarQueryParams := url.Values{}
+    localVarFormParams := make([]FormParamContainer, 0)
+
+
+
+    // to determine the Content-Type header
+    localVarHttpContentTypes := []string{ "multipart/form-data", }
+
+    // set Content-Type header
+    localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
+    if localVarHttpContentType != "" {
+        localVarHeaderParams["Content-Type"] = localVarHttpContentType
+    }
+
+    // to determine the Accept header
+    localVarHttpHeaderAccepts := []string{
+        "application/xml",
+        "application/json",
+    }
+
+    // set Accept header
+    localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
+    if localVarHttpHeaderAccept != "" {
+        localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
+    }
+
+
+    _document := document
+    if _document != nil {
+        fbs, _ := ioutil.ReadAll(_document)
+        _document.Close()
+        localVarFormParams = append(localVarFormParams, NewFileFormParamContainer(_document.Name(), fbs))
+    }
+
+
+    localVarFormParams = append(localVarFormParams, NewTextFormParamContainer("DocumentList", parameterToString(documentList, "")))
+
+
+    r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
+    if err != nil {
+        return nil, err
+    }
+
+    localVarHttpResponse, err := a.client.callAPI(r)
+    if err != nil || localVarHttpResponse == nil {
+        return localVarHttpResponse, err
+    }
+    if localVarHttpResponse.StatusCode == 401 {
+        defer localVarHttpResponse.Body.Close()
+        return nil, errors.New("Access is denied")
+    }
+    if localVarHttpResponse.StatusCode >= 300 {
+        defer localVarHttpResponse.Body.Close()
+
+        var apiError models.WordsApiErrorResponse;
+
+        if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
+            return localVarHttpResponse, err
+        }
+
+        return localVarHttpResponse, &apiError
+    }
+    return localVarHttpResponse, err
 }
 /* WordsApiService Apply a style to the document node.
  * @param ctx context.Context for authentication, logging, tracing, etc.
@@ -1040,9 +1122,9 @@ func (a *WordsApiService) CompareDocument(ctx context.Context, name string, comp
  @param document Converting document.
  @param format Format to convert.
  @param optional (nil or map[string]interface{}) with one or more of:
-     @param "storage" (string) Original document storage.
      @param "outPath" (string) Path for saving operation result to the local storage.
      @param "fileNameFieldValue" (string) This file name will be used when resulting document has dynamic field for document file name {filename}. If it is not set, "sourceFilename" will be used instead.
+     @param "storage" (string) Original document storage.
      @param "fontsLocation" (string) Folder in filestorage with custom fonts.
 @return *os.File*/
 func (a *WordsApiService) ConvertDocument(ctx context.Context, document *os.File, format string, localVarOptionals map[string]interface{}) (*http.Response, error) {
@@ -1061,13 +1143,13 @@ func (a *WordsApiService) ConvertDocument(ctx context.Context, document *os.File
     localVarQueryParams := url.Values{}
     localVarFormParams := make([]FormParamContainer, 0)
 
-    if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
-        return nil, err
-    }
     if err := typeCheckParameter(localVarOptionals["outPath"], "string", "outPath"); err != nil {
         return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["fileNameFieldValue"], "string", "fileNameFieldValue"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
         return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["fontsLocation"], "string", "fontsLocation"); err != nil {
@@ -1078,11 +1160,6 @@ func (a *WordsApiService) ConvertDocument(ctx context.Context, document *os.File
     localVarQueryParams.Add("Format", parameterToString(format, ""))
 
 
-    if localVarTempParam, localVarOk := localVarOptionals["storage"].(string); localVarOk {
-        localVarQueryParams.Add("Storage", parameterToString(localVarTempParam, ""))
-    }
-
-
     if localVarTempParam, localVarOk := localVarOptionals["outPath"].(string); localVarOk {
         localVarQueryParams.Add("OutPath", parameterToString(localVarTempParam, ""))
     }
@@ -1090,6 +1167,11 @@ func (a *WordsApiService) ConvertDocument(ctx context.Context, document *os.File
 
     if localVarTempParam, localVarOk := localVarOptionals["fileNameFieldValue"].(string); localVarOk {
         localVarQueryParams.Add("FileNameFieldValue", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["storage"].(string); localVarOk {
+        localVarQueryParams.Add("Storage", parameterToString(localVarTempParam, ""))
     }
 
 
@@ -1502,9 +1584,9 @@ func (a *WordsApiService) CopyStyle(ctx context.Context, name string, styleCopy 
 /* WordsApiService Creates new document. Document is created with format which is recognized from file extensions. Supported extensions: ".doc", ".docx", ".docm", ".dot", ".dotm", ".dotx", ".flatopc", ".fopc", ".flatopc_macro", ".fopc_macro", ".flatopc_template", ".fopc_template", ".flatopc_template_macro", ".fopc_template_macro", ".wordml", ".wml", ".rtf".
  * @param ctx context.Context for authentication, logging, tracing, etc.
  @param optional (nil or map[string]interface{}) with one or more of:
-     @param "storage" (string) Original document storage.
      @param "fileName" (string) The document name.
      @param "folder" (string) The document folder.
+     @param "storage" (string) Original document storage.
 @return models.DocumentResponse*/
 func (a *WordsApiService) CreateDocument(ctx context.Context, localVarOptionals map[string]interface{}) (models.DocumentResponse, *http.Response, error) {
     var (
@@ -1523,19 +1605,14 @@ func (a *WordsApiService) CreateDocument(ctx context.Context, localVarOptionals 
     localVarQueryParams := url.Values{}
     localVarFormParams := make([]FormParamContainer, 0)
 
-    if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
-        return successPayload, nil, err
-    }
     if err := typeCheckParameter(localVarOptionals["fileName"], "string", "fileName"); err != nil {
         return successPayload, nil, err
     }
     if err := typeCheckParameter(localVarOptionals["folder"], "string", "folder"); err != nil {
         return successPayload, nil, err
     }
-
-
-    if localVarTempParam, localVarOk := localVarOptionals["storage"].(string); localVarOk {
-        localVarQueryParams.Add("Storage", parameterToString(localVarTempParam, ""))
+    if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
+        return successPayload, nil, err
     }
 
 
@@ -1546,6 +1623,11 @@ func (a *WordsApiService) CreateDocument(ctx context.Context, localVarOptionals 
 
     if localVarTempParam, localVarOk := localVarOptionals["folder"].(string); localVarOk {
         localVarQueryParams.Add("Folder", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["storage"].(string); localVarOk {
+        localVarQueryParams.Add("Storage", parameterToString(localVarTempParam, ""))
     }
 
 
@@ -5371,6 +5453,134 @@ func (a *WordsApiService) DeleteParagraphListFormatWithoutNodePath(ctx context.C
 
     return successPayload, localVarHttpResponse, err
 }
+/* WordsApiService Removes paragraph from section.
+ * @param ctx context.Context for authentication, logging, tracing, etc.
+ @param nodePath Path to the node which contains paragraphs.
+ @param document The document.
+ @param index Object index.
+ @param optional (nil or map[string]interface{}) with one or more of:
+     @param "loadEncoding" (string) Encoding that will be used to load an HTML (or TXT) document if the encoding is not specified in HTML.
+     @param "password" (string) Password for opening an encrypted document.
+     @param "destFileName" (string) Result path of the document after the operation. If this parameter is omitted then result of the operation will be saved as the source document.
+     @param "revisionAuthor" (string) Initials of the author to use for revisions.If you set this parameter and then make some changes to the document programmatically, save the document and later open the document in MS Word you will see these changes as revisions.
+     @param "revisionDateTime" (string) The date and time to use for revisions.
+@return *os.File*/
+func (a *WordsApiService) DeleteParagraphOnline(ctx context.Context, nodePath string, document *os.File, index int32, localVarOptionals map[string]interface{}) (*http.Response, error) {
+    var (
+        localVarHttpMethod = strings.ToUpper("delete")
+        localVarPostBody interface{}
+    )
+
+    // create path and map variables
+    localVarPath := "/words/online/{nodePath}/paragraphs/{index}"
+    localVarPath = strings.Replace(localVarPath, "{"+"nodePath"+"}", fmt.Sprintf("%v", nodePath), -1)
+    localVarPath = strings.Replace(localVarPath, "{"+"index"+"}", fmt.Sprintf("%v", index), -1)
+
+    localVarPath = strings.Replace(localVarPath, "/<nil>", "", -1)
+    localVarPath = a.client.cfg.BaseUrl + strings.Replace(localVarPath, "//", "/", -1)
+
+    localVarHeaderParams := make(map[string]string)
+    localVarQueryParams := url.Values{}
+    localVarFormParams := make([]FormParamContainer, 0)
+
+    if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["destFileName"], "string", "destFileName"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["revisionAuthor"], "string", "revisionAuthor"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["revisionDateTime"], "string", "revisionDateTime"); err != nil {
+        return nil, err
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["loadEncoding"].(string); localVarOk {
+        localVarQueryParams.Add("LoadEncoding", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["password"].(string); localVarOk {
+        localVarQueryParams.Add("Password", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["destFileName"].(string); localVarOk {
+        localVarQueryParams.Add("DestFileName", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["revisionAuthor"].(string); localVarOk {
+        localVarQueryParams.Add("RevisionAuthor", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["revisionDateTime"].(string); localVarOk {
+        localVarQueryParams.Add("RevisionDateTime", parameterToString(localVarTempParam, ""))
+    }
+
+
+    // to determine the Content-Type header
+    localVarHttpContentTypes := []string{ "multipart/form-data", }
+
+    // set Content-Type header
+    localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
+    if localVarHttpContentType != "" {
+        localVarHeaderParams["Content-Type"] = localVarHttpContentType
+    }
+
+    // to determine the Accept header
+    localVarHttpHeaderAccepts := []string{
+        "application/xml",
+        "application/json",
+    }
+
+    // set Accept header
+    localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
+    if localVarHttpHeaderAccept != "" {
+        localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
+    }
+
+
+    _document := document
+    if _document != nil {
+        fbs, _ := ioutil.ReadAll(_document)
+        _document.Close()
+        localVarFormParams = append(localVarFormParams, NewFileFormParamContainer(_document.Name(), fbs))
+    }
+
+
+    r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
+    if err != nil {
+        return nil, err
+    }
+
+    localVarHttpResponse, err := a.client.callAPI(r)
+    if err != nil || localVarHttpResponse == nil {
+        return localVarHttpResponse, err
+    }
+    if localVarHttpResponse.StatusCode == 401 {
+        defer localVarHttpResponse.Body.Close()
+        return nil, errors.New("Access is denied")
+    }
+    if localVarHttpResponse.StatusCode >= 300 {
+        defer localVarHttpResponse.Body.Close()
+
+        var apiError models.WordsApiErrorResponse;
+
+        if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
+            return localVarHttpResponse, err
+        }
+
+        return localVarHttpResponse, &apiError
+    }
+    return localVarHttpResponse, err
+}
 /* WordsApiService Remove the i-th tab stop.
  * @param ctx context.Context for authentication, logging, tracing, etc.
  @param name The document name.
@@ -9073,19 +9283,18 @@ func (a *WordsApiService) GetDocumentFieldNames(ctx context.Context, name string
 }
 /* WordsApiService Reads document field names.
  * @param ctx context.Context for authentication, logging, tracing, etc.
- @param template File with template.
+ @param document The document.
  @param optional (nil or map[string]interface{}) with one or more of:
-     @param "useNonMergeFields" (bool) Use non merge fields or not.
-@return models.FieldNamesResponse*/
-func (a *WordsApiService) GetDocumentFieldNamesOnline(ctx context.Context, template *os.File, localVarOptionals map[string]interface{}) (models.FieldNamesResponse, *http.Response, error) {
+     @param "useNonMergeFields" (bool) If true, result includes "mustache" field names.
+@return *os.File*/
+func (a *WordsApiService) GetDocumentFieldNamesOnline(ctx context.Context, document *os.File, localVarOptionals map[string]interface{}) (*http.Response, error) {
     var (
-        localVarHttpMethod = strings.ToUpper("put")
+        localVarHttpMethod = strings.ToUpper("get")
         localVarPostBody interface{}
-        successPayload models.FieldNamesResponse
     )
 
     // create path and map variables
-    localVarPath := "/words/mailMerge/FieldNames"
+    localVarPath := "/words/online/mailMerge/FieldNames"
 
     localVarPath = strings.Replace(localVarPath, "/<nil>", "", -1)
     localVarPath = a.client.cfg.BaseUrl + strings.Replace(localVarPath, "//", "/", -1)
@@ -9095,7 +9304,7 @@ func (a *WordsApiService) GetDocumentFieldNamesOnline(ctx context.Context, templ
     localVarFormParams := make([]FormParamContainer, 0)
 
     if err := typeCheckParameter(localVarOptionals["useNonMergeFields"], "bool", "useNonMergeFields"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
 
@@ -9126,26 +9335,26 @@ func (a *WordsApiService) GetDocumentFieldNamesOnline(ctx context.Context, templ
     }
 
 
-    _template := template
-    if _template != nil {
-        fbs, _ := ioutil.ReadAll(_template)
-        _template.Close()
-        localVarFormParams = append(localVarFormParams, NewFileFormParamContainer(_template.Name(), fbs))
+    _document := document
+    if _document != nil {
+        fbs, _ := ioutil.ReadAll(_document)
+        _document.Close()
+        localVarFormParams = append(localVarFormParams, NewFileFormParamContainer(_document.Name(), fbs))
     }
 
 
     r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
     if err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
     localVarHttpResponse, err := a.client.callAPI(r)
     if err != nil || localVarHttpResponse == nil {
-        return successPayload, localVarHttpResponse, err
+        return localVarHttpResponse, err
     }
     if localVarHttpResponse.StatusCode == 401 {
         defer localVarHttpResponse.Body.Close()
-        return successPayload, nil, errors.New("Access is denied")
+        return nil, errors.New("Access is denied")
     }
     if localVarHttpResponse.StatusCode >= 300 {
         defer localVarHttpResponse.Body.Close()
@@ -9153,17 +9362,12 @@ func (a *WordsApiService) GetDocumentFieldNamesOnline(ctx context.Context, templ
         var apiError models.WordsApiErrorResponse;
 
         if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
-            return successPayload, localVarHttpResponse, err
+            return localVarHttpResponse, err
         }
 
-        return successPayload, localVarHttpResponse, &apiError
+        return localVarHttpResponse, &apiError
     }
-    defer localVarHttpResponse.Body.Close()
-    if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
-        return successPayload, localVarHttpResponse, err
-    }
-
-    return successPayload, localVarHttpResponse, err
+    return localVarHttpResponse, err
 }
 /* WordsApiService Reads document hyperlink by its index.
  * @param ctx context.Context for authentication, logging, tracing, etc.
@@ -9885,6 +10089,112 @@ func (a *WordsApiService) GetDocumentStatistics(ctx context.Context, name string
     }
 
     return successPayload, localVarHttpResponse, err
+}
+/* WordsApiService Reads document statistics.
+ * @param ctx context.Context for authentication, logging, tracing, etc.
+ @param document The document.
+ @param optional (nil or map[string]interface{}) with one or more of:
+     @param "includeComments" (bool) Support including/excluding comments from the WordCount. Default value is "false".
+     @param "includeFootnotes" (bool) Support including/excluding footnotes from the WordCount. Default value is "false".
+     @param "includeTextInShapes" (bool) Support including/excluding shape's text from the WordCount. Default value is "false".
+@return *os.File*/
+func (a *WordsApiService) GetDocumentStatisticsOnline(ctx context.Context, document *os.File, localVarOptionals map[string]interface{}) (*http.Response, error) {
+    var (
+        localVarHttpMethod = strings.ToUpper("get")
+        localVarPostBody interface{}
+    )
+
+    // create path and map variables
+    localVarPath := "/words/online/statistics"
+
+    localVarPath = strings.Replace(localVarPath, "/<nil>", "", -1)
+    localVarPath = a.client.cfg.BaseUrl + strings.Replace(localVarPath, "//", "/", -1)
+
+    localVarHeaderParams := make(map[string]string)
+    localVarQueryParams := url.Values{}
+    localVarFormParams := make([]FormParamContainer, 0)
+
+    if err := typeCheckParameter(localVarOptionals["includeComments"], "bool", "includeComments"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["includeFootnotes"], "bool", "includeFootnotes"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["includeTextInShapes"], "bool", "includeTextInShapes"); err != nil {
+        return nil, err
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["includeComments"].(bool); localVarOk {
+        localVarQueryParams.Add("IncludeComments", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["includeFootnotes"].(bool); localVarOk {
+        localVarQueryParams.Add("IncludeFootnotes", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["includeTextInShapes"].(bool); localVarOk {
+        localVarQueryParams.Add("IncludeTextInShapes", parameterToString(localVarTempParam, ""))
+    }
+
+
+    // to determine the Content-Type header
+    localVarHttpContentTypes := []string{ "multipart/form-data", }
+
+    // set Content-Type header
+    localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
+    if localVarHttpContentType != "" {
+        localVarHeaderParams["Content-Type"] = localVarHttpContentType
+    }
+
+    // to determine the Accept header
+    localVarHttpHeaderAccepts := []string{
+        "application/xml",
+        "application/json",
+    }
+
+    // set Accept header
+    localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
+    if localVarHttpHeaderAccept != "" {
+        localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
+    }
+
+
+    _document := document
+    if _document != nil {
+        fbs, _ := ioutil.ReadAll(_document)
+        _document.Close()
+        localVarFormParams = append(localVarFormParams, NewFileFormParamContainer(_document.Name(), fbs))
+    }
+
+
+    r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
+    if err != nil {
+        return nil, err
+    }
+
+    localVarHttpResponse, err := a.client.callAPI(r)
+    if err != nil || localVarHttpResponse == nil {
+        return localVarHttpResponse, err
+    }
+    if localVarHttpResponse.StatusCode == 401 {
+        defer localVarHttpResponse.Body.Close()
+        return nil, errors.New("Access is denied")
+    }
+    if localVarHttpResponse.StatusCode >= 300 {
+        defer localVarHttpResponse.Body.Close()
+
+        var apiError models.WordsApiErrorResponse;
+
+        if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
+            return localVarHttpResponse, err
+        }
+
+        return localVarHttpResponse, &apiError
+    }
+    return localVarHttpResponse, err
 }
 /* WordsApiService Exports the document into the specified format.
  * @param ctx context.Context for authentication, logging, tracing, etc.
@@ -12599,12 +12909,11 @@ func (a *WordsApiService) GetOfficeMathObjectWithoutNodePath(ctx context.Context
      @param "storage" (string) Original document storage.
      @param "loadEncoding" (string) Encoding that will be used to load an HTML (or TXT) document if the encoding is not specified in HTML.
      @param "password" (string) Password for opening an encrypted document.
-@return models.ParagraphResponse*/
-func (a *WordsApiService) GetParagraph(ctx context.Context, name string, nodePath string, index int32, localVarOptionals map[string]interface{}) (models.ParagraphResponse, *http.Response, error) {
+@return *os.File*/
+func (a *WordsApiService) GetParagraph(ctx context.Context, name string, nodePath string, index int32, localVarOptionals map[string]interface{}) (*http.Response, error) {
     var (
         localVarHttpMethod = strings.ToUpper("get")
         localVarPostBody interface{}
-        successPayload models.ParagraphResponse
     )
 
     // create path and map variables
@@ -12621,16 +12930,16 @@ func (a *WordsApiService) GetParagraph(ctx context.Context, name string, nodePat
     localVarFormParams := make([]FormParamContainer, 0)
 
     if err := typeCheckParameter(localVarOptionals["folder"], "string", "folder"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
 
@@ -12679,16 +12988,16 @@ func (a *WordsApiService) GetParagraph(ctx context.Context, name string, nodePat
 
     r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
     if err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
     localVarHttpResponse, err := a.client.callAPI(r)
     if err != nil || localVarHttpResponse == nil {
-        return successPayload, localVarHttpResponse, err
+        return localVarHttpResponse, err
     }
     if localVarHttpResponse.StatusCode == 401 {
         defer localVarHttpResponse.Body.Close()
-        return successPayload, nil, errors.New("Access is denied")
+        return nil, errors.New("Access is denied")
     }
     if localVarHttpResponse.StatusCode >= 300 {
         defer localVarHttpResponse.Body.Close()
@@ -12696,17 +13005,12 @@ func (a *WordsApiService) GetParagraph(ctx context.Context, name string, nodePat
         var apiError models.WordsApiErrorResponse;
 
         if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
-            return successPayload, localVarHttpResponse, err
+            return localVarHttpResponse, err
         }
 
-        return successPayload, localVarHttpResponse, &apiError
+        return localVarHttpResponse, &apiError
     }
-    defer localVarHttpResponse.Body.Close()
-    if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
-        return successPayload, localVarHttpResponse, err
-    }
-
-    return successPayload, localVarHttpResponse, err
+    return localVarHttpResponse, err
 }
 /* WordsApiService Represents all the formatting for a paragraph.
  * @param ctx context.Context for authentication, logging, tracing, etc.
@@ -13180,6 +13484,107 @@ func (a *WordsApiService) GetParagraphListFormatWithoutNodePath(ctx context.Cont
 
     return successPayload, localVarHttpResponse, err
 }
+/* WordsApiService This resource represents one of the paragraphs contained in the document.
+ * @param ctx context.Context for authentication, logging, tracing, etc.
+ @param nodePath Path to the node which contains paragraphs.
+ @param document The document.
+ @param index Object index.
+ @param optional (nil or map[string]interface{}) with one or more of:
+     @param "loadEncoding" (string) Encoding that will be used to load an HTML (or TXT) document if the encoding is not specified in HTML.
+     @param "password" (string) Password for opening an encrypted document.
+@return *os.File*/
+func (a *WordsApiService) GetParagraphOnline(ctx context.Context, nodePath string, document *os.File, index int32, localVarOptionals map[string]interface{}) (*http.Response, error) {
+    var (
+        localVarHttpMethod = strings.ToUpper("get")
+        localVarPostBody interface{}
+    )
+
+    // create path and map variables
+    localVarPath := "/words/online/{nodePath}/paragraphs/{index}"
+    localVarPath = strings.Replace(localVarPath, "{"+"nodePath"+"}", fmt.Sprintf("%v", nodePath), -1)
+    localVarPath = strings.Replace(localVarPath, "{"+"index"+"}", fmt.Sprintf("%v", index), -1)
+
+    localVarPath = strings.Replace(localVarPath, "/<nil>", "", -1)
+    localVarPath = a.client.cfg.BaseUrl + strings.Replace(localVarPath, "//", "/", -1)
+
+    localVarHeaderParams := make(map[string]string)
+    localVarQueryParams := url.Values{}
+    localVarFormParams := make([]FormParamContainer, 0)
+
+    if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
+        return nil, err
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["loadEncoding"].(string); localVarOk {
+        localVarQueryParams.Add("LoadEncoding", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["password"].(string); localVarOk {
+        localVarQueryParams.Add("Password", parameterToString(localVarTempParam, ""))
+    }
+
+
+    // to determine the Content-Type header
+    localVarHttpContentTypes := []string{ "multipart/form-data", }
+
+    // set Content-Type header
+    localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
+    if localVarHttpContentType != "" {
+        localVarHeaderParams["Content-Type"] = localVarHttpContentType
+    }
+
+    // to determine the Accept header
+    localVarHttpHeaderAccepts := []string{
+        "application/xml",
+        "application/json",
+    }
+
+    // set Accept header
+    localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
+    if localVarHttpHeaderAccept != "" {
+        localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
+    }
+
+
+    _document := document
+    if _document != nil {
+        fbs, _ := ioutil.ReadAll(_document)
+        _document.Close()
+        localVarFormParams = append(localVarFormParams, NewFileFormParamContainer(_document.Name(), fbs))
+    }
+
+
+    r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
+    if err != nil {
+        return nil, err
+    }
+
+    localVarHttpResponse, err := a.client.callAPI(r)
+    if err != nil || localVarHttpResponse == nil {
+        return localVarHttpResponse, err
+    }
+    if localVarHttpResponse.StatusCode == 401 {
+        defer localVarHttpResponse.Body.Close()
+        return nil, errors.New("Access is denied")
+    }
+    if localVarHttpResponse.StatusCode >= 300 {
+        defer localVarHttpResponse.Body.Close()
+
+        var apiError models.WordsApiErrorResponse;
+
+        if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
+            return localVarHttpResponse, err
+        }
+
+        return localVarHttpResponse, &apiError
+    }
+    return localVarHttpResponse, err
+}
 /* WordsApiService Returns a list of paragraphs that are contained in the document.
  * @param ctx context.Context for authentication, logging, tracing, etc.
  @param name The document name.
@@ -13189,12 +13594,11 @@ func (a *WordsApiService) GetParagraphListFormatWithoutNodePath(ctx context.Cont
      @param "storage" (string) Original document storage.
      @param "loadEncoding" (string) Encoding that will be used to load an HTML (or TXT) document if the encoding is not specified in HTML.
      @param "password" (string) Password for opening an encrypted document.
-@return models.ParagraphLinkCollectionResponse*/
-func (a *WordsApiService) GetParagraphs(ctx context.Context, name string, nodePath string, localVarOptionals map[string]interface{}) (models.ParagraphLinkCollectionResponse, *http.Response, error) {
+@return *os.File*/
+func (a *WordsApiService) GetParagraphs(ctx context.Context, name string, nodePath string, localVarOptionals map[string]interface{}) (*http.Response, error) {
     var (
         localVarHttpMethod = strings.ToUpper("get")
         localVarPostBody interface{}
-        successPayload models.ParagraphLinkCollectionResponse
     )
 
     // create path and map variables
@@ -13210,16 +13614,16 @@ func (a *WordsApiService) GetParagraphs(ctx context.Context, name string, nodePa
     localVarFormParams := make([]FormParamContainer, 0)
 
     if err := typeCheckParameter(localVarOptionals["folder"], "string", "folder"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
 
@@ -13268,16 +13672,16 @@ func (a *WordsApiService) GetParagraphs(ctx context.Context, name string, nodePa
 
     r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
     if err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
     localVarHttpResponse, err := a.client.callAPI(r)
     if err != nil || localVarHttpResponse == nil {
-        return successPayload, localVarHttpResponse, err
+        return localVarHttpResponse, err
     }
     if localVarHttpResponse.StatusCode == 401 {
         defer localVarHttpResponse.Body.Close()
-        return successPayload, nil, errors.New("Access is denied")
+        return nil, errors.New("Access is denied")
     }
     if localVarHttpResponse.StatusCode >= 300 {
         defer localVarHttpResponse.Body.Close()
@@ -13285,17 +13689,111 @@ func (a *WordsApiService) GetParagraphs(ctx context.Context, name string, nodePa
         var apiError models.WordsApiErrorResponse;
 
         if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
-            return successPayload, localVarHttpResponse, err
+            return localVarHttpResponse, err
         }
 
-        return successPayload, localVarHttpResponse, &apiError
+        return localVarHttpResponse, &apiError
     }
-    defer localVarHttpResponse.Body.Close()
-    if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
-        return successPayload, localVarHttpResponse, err
+    return localVarHttpResponse, err
+}
+/* WordsApiService Returns a list of paragraphs that are contained in the document.
+ * @param ctx context.Context for authentication, logging, tracing, etc.
+ @param nodePath Path to the node which contains paragraphs.
+ @param document The document.
+ @param optional (nil or map[string]interface{}) with one or more of:
+     @param "loadEncoding" (string) Encoding that will be used to load an HTML (or TXT) document if the encoding is not specified in HTML.
+     @param "password" (string) Password for opening an encrypted document.
+@return *os.File*/
+func (a *WordsApiService) GetParagraphsOnline(ctx context.Context, nodePath string, document *os.File, localVarOptionals map[string]interface{}) (*http.Response, error) {
+    var (
+        localVarHttpMethod = strings.ToUpper("get")
+        localVarPostBody interface{}
+    )
+
+    // create path and map variables
+    localVarPath := "/words/online/{nodePath}/paragraphs"
+    localVarPath = strings.Replace(localVarPath, "{"+"nodePath"+"}", fmt.Sprintf("%v", nodePath), -1)
+
+    localVarPath = strings.Replace(localVarPath, "/<nil>", "", -1)
+    localVarPath = a.client.cfg.BaseUrl + strings.Replace(localVarPath, "//", "/", -1)
+
+    localVarHeaderParams := make(map[string]string)
+    localVarQueryParams := url.Values{}
+    localVarFormParams := make([]FormParamContainer, 0)
+
+    if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
+        return nil, err
     }
 
-    return successPayload, localVarHttpResponse, err
+
+    if localVarTempParam, localVarOk := localVarOptionals["loadEncoding"].(string); localVarOk {
+        localVarQueryParams.Add("LoadEncoding", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["password"].(string); localVarOk {
+        localVarQueryParams.Add("Password", parameterToString(localVarTempParam, ""))
+    }
+
+
+    // to determine the Content-Type header
+    localVarHttpContentTypes := []string{ "multipart/form-data", }
+
+    // set Content-Type header
+    localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
+    if localVarHttpContentType != "" {
+        localVarHeaderParams["Content-Type"] = localVarHttpContentType
+    }
+
+    // to determine the Accept header
+    localVarHttpHeaderAccepts := []string{
+        "application/xml",
+        "application/json",
+    }
+
+    // set Accept header
+    localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
+    if localVarHttpHeaderAccept != "" {
+        localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
+    }
+
+
+    _document := document
+    if _document != nil {
+        fbs, _ := ioutil.ReadAll(_document)
+        _document.Close()
+        localVarFormParams = append(localVarFormParams, NewFileFormParamContainer(_document.Name(), fbs))
+    }
+
+
+    r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
+    if err != nil {
+        return nil, err
+    }
+
+    localVarHttpResponse, err := a.client.callAPI(r)
+    if err != nil || localVarHttpResponse == nil {
+        return localVarHttpResponse, err
+    }
+    if localVarHttpResponse.StatusCode == 401 {
+        defer localVarHttpResponse.Body.Close()
+        return nil, errors.New("Access is denied")
+    }
+    if localVarHttpResponse.StatusCode >= 300 {
+        defer localVarHttpResponse.Body.Close()
+
+        var apiError models.WordsApiErrorResponse;
+
+        if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
+            return localVarHttpResponse, err
+        }
+
+        return localVarHttpResponse, &apiError
+    }
+    return localVarHttpResponse, err
 }
 /* WordsApiService Returns a list of paragraphs that are contained in the document.
  * @param ctx context.Context for authentication, logging, tracing, etc.
@@ -13305,12 +13803,11 @@ func (a *WordsApiService) GetParagraphs(ctx context.Context, name string, nodePa
      @param "storage" (string) Original document storage.
      @param "loadEncoding" (string) Encoding that will be used to load an HTML (or TXT) document if the encoding is not specified in HTML.
      @param "password" (string) Password for opening an encrypted document.
-@return models.ParagraphLinkCollectionResponse*/
-func (a *WordsApiService) GetParagraphsWithoutNodePath(ctx context.Context, name string, localVarOptionals map[string]interface{}) (models.ParagraphLinkCollectionResponse, *http.Response, error) {
+@return *os.File*/
+func (a *WordsApiService) GetParagraphsWithoutNodePath(ctx context.Context, name string, localVarOptionals map[string]interface{}) (*http.Response, error) {
     var (
         localVarHttpMethod = strings.ToUpper("get")
         localVarPostBody interface{}
-        successPayload models.ParagraphLinkCollectionResponse
     )
 
     // create path and map variables
@@ -13325,16 +13822,16 @@ func (a *WordsApiService) GetParagraphsWithoutNodePath(ctx context.Context, name
     localVarFormParams := make([]FormParamContainer, 0)
 
     if err := typeCheckParameter(localVarOptionals["folder"], "string", "folder"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
 
@@ -13383,16 +13880,16 @@ func (a *WordsApiService) GetParagraphsWithoutNodePath(ctx context.Context, name
 
     r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
     if err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
     localVarHttpResponse, err := a.client.callAPI(r)
     if err != nil || localVarHttpResponse == nil {
-        return successPayload, localVarHttpResponse, err
+        return localVarHttpResponse, err
     }
     if localVarHttpResponse.StatusCode == 401 {
         defer localVarHttpResponse.Body.Close()
-        return successPayload, nil, errors.New("Access is denied")
+        return nil, errors.New("Access is denied")
     }
     if localVarHttpResponse.StatusCode >= 300 {
         defer localVarHttpResponse.Body.Close()
@@ -13400,17 +13897,12 @@ func (a *WordsApiService) GetParagraphsWithoutNodePath(ctx context.Context, name
         var apiError models.WordsApiErrorResponse;
 
         if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
-            return successPayload, localVarHttpResponse, err
+            return localVarHttpResponse, err
         }
 
-        return successPayload, localVarHttpResponse, &apiError
+        return localVarHttpResponse, &apiError
     }
-    defer localVarHttpResponse.Body.Close()
-    if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
-        return successPayload, localVarHttpResponse, err
-    }
-
-    return successPayload, localVarHttpResponse, err
+    return localVarHttpResponse, err
 }
 /* WordsApiService Get all tab stops for the paragraph.
  * @param ctx context.Context for authentication, logging, tracing, etc.
@@ -13657,12 +14149,11 @@ func (a *WordsApiService) GetParagraphTabStopsWithoutNodePath(ctx context.Contex
      @param "storage" (string) Original document storage.
      @param "loadEncoding" (string) Encoding that will be used to load an HTML (or TXT) document if the encoding is not specified in HTML.
      @param "password" (string) Password for opening an encrypted document.
-@return models.ParagraphResponse*/
-func (a *WordsApiService) GetParagraphWithoutNodePath(ctx context.Context, name string, index int32, localVarOptionals map[string]interface{}) (models.ParagraphResponse, *http.Response, error) {
+@return *os.File*/
+func (a *WordsApiService) GetParagraphWithoutNodePath(ctx context.Context, name string, index int32, localVarOptionals map[string]interface{}) (*http.Response, error) {
     var (
         localVarHttpMethod = strings.ToUpper("get")
         localVarPostBody interface{}
-        successPayload models.ParagraphResponse
     )
 
     // create path and map variables
@@ -13678,16 +14169,16 @@ func (a *WordsApiService) GetParagraphWithoutNodePath(ctx context.Context, name 
     localVarFormParams := make([]FormParamContainer, 0)
 
     if err := typeCheckParameter(localVarOptionals["folder"], "string", "folder"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
 
@@ -13736,16 +14227,16 @@ func (a *WordsApiService) GetParagraphWithoutNodePath(ctx context.Context, name 
 
     r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
     if err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
     localVarHttpResponse, err := a.client.callAPI(r)
     if err != nil || localVarHttpResponse == nil {
-        return successPayload, localVarHttpResponse, err
+        return localVarHttpResponse, err
     }
     if localVarHttpResponse.StatusCode == 401 {
         defer localVarHttpResponse.Body.Close()
-        return successPayload, nil, errors.New("Access is denied")
+        return nil, errors.New("Access is denied")
     }
     if localVarHttpResponse.StatusCode >= 300 {
         defer localVarHttpResponse.Body.Close()
@@ -13753,17 +14244,12 @@ func (a *WordsApiService) GetParagraphWithoutNodePath(ctx context.Context, name 
         var apiError models.WordsApiErrorResponse;
 
         if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
-            return successPayload, localVarHttpResponse, err
+            return localVarHttpResponse, err
         }
 
-        return successPayload, localVarHttpResponse, &apiError
+        return localVarHttpResponse, &apiError
     }
-    defer localVarHttpResponse.Body.Close()
-    if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
-        return successPayload, localVarHttpResponse, err
-    }
-
-    return successPayload, localVarHttpResponse, err
+    return localVarHttpResponse, err
 }
 /* WordsApiService Gets the text from the range.
  * @param ctx context.Context for authentication, logging, tracing, etc.
@@ -18175,8 +18661,8 @@ func (a *WordsApiService) InsertPageNumbers(ctx context.Context, name string, pa
 /* WordsApiService Adds paragraph to document, returns added paragraph's data.
  * @param ctx context.Context for authentication, logging, tracing, etc.
  @param name The document name.
- @param paragraph Paragraph data.
  @param nodePath Path to the node which contains paragraphs.
+ @param paragraph Paragraph data.
  @param optional (nil or map[string]interface{}) with one or more of:
      @param "folder" (string) Original document folder.
      @param "storage" (string) Original document storage.
@@ -18186,12 +18672,11 @@ func (a *WordsApiService) InsertPageNumbers(ctx context.Context, name string, pa
      @param "revisionAuthor" (string) Initials of the author to use for revisions.If you set this parameter and then make some changes to the document programmatically, save the document and later open the document in MS Word you will see these changes as revisions.
      @param "revisionDateTime" (string) The date and time to use for revisions.
      @param "insertBeforeNode" (string) Paragraph will be inserted before node with index.
-@return models.ParagraphResponse*/
-func (a *WordsApiService) InsertParagraph(ctx context.Context, name string, paragraph models.IParagraphInsert, nodePath string, localVarOptionals map[string]interface{}) (models.ParagraphResponse, *http.Response, error) {
+@return *os.File*/
+func (a *WordsApiService) InsertParagraph(ctx context.Context, name string, nodePath string, paragraph models.IParagraphInsert, localVarOptionals map[string]interface{}) (*http.Response, error) {
     var (
         localVarHttpMethod = strings.ToUpper("post")
         localVarPostBody interface{}
-        successPayload models.ParagraphResponse
     )
 
     // create path and map variables
@@ -18207,28 +18692,28 @@ func (a *WordsApiService) InsertParagraph(ctx context.Context, name string, para
     localVarFormParams := make([]FormParamContainer, 0)
 
     if err := typeCheckParameter(localVarOptionals["folder"], "string", "folder"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["destFileName"], "string", "destFileName"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["revisionAuthor"], "string", "revisionAuthor"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["revisionDateTime"], "string", "revisionDateTime"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["insertBeforeNode"], "string", "insertBeforeNode"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
 
@@ -18298,16 +18783,16 @@ func (a *WordsApiService) InsertParagraph(ctx context.Context, name string, para
     localVarPostBody = &paragraph
     r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
     if err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
     localVarHttpResponse, err := a.client.callAPI(r)
     if err != nil || localVarHttpResponse == nil {
-        return successPayload, localVarHttpResponse, err
+        return localVarHttpResponse, err
     }
     if localVarHttpResponse.StatusCode == 401 {
         defer localVarHttpResponse.Body.Close()
-        return successPayload, nil, errors.New("Access is denied")
+        return nil, errors.New("Access is denied")
     }
     if localVarHttpResponse.StatusCode >= 300 {
         defer localVarHttpResponse.Body.Close()
@@ -18315,17 +18800,151 @@ func (a *WordsApiService) InsertParagraph(ctx context.Context, name string, para
         var apiError models.WordsApiErrorResponse;
 
         if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
-            return successPayload, localVarHttpResponse, err
+            return localVarHttpResponse, err
         }
 
-        return successPayload, localVarHttpResponse, &apiError
+        return localVarHttpResponse, &apiError
     }
-    defer localVarHttpResponse.Body.Close()
-    if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
-        return successPayload, localVarHttpResponse, err
+    return localVarHttpResponse, err
+}
+/* WordsApiService Adds paragraph to document, returns added paragraph's data.
+ * @param ctx context.Context for authentication, logging, tracing, etc.
+ @param nodePath Path to the node which contains paragraphs.
+ @param document The document.
+ @param paragraph Paragraph data.
+ @param optional (nil or map[string]interface{}) with one or more of:
+     @param "loadEncoding" (string) Encoding that will be used to load an HTML (or TXT) document if the encoding is not specified in HTML.
+     @param "password" (string) Password for opening an encrypted document.
+     @param "destFileName" (string) Result path of the document after the operation. If this parameter is omitted then result of the operation will be saved as the source document.
+     @param "revisionAuthor" (string) Initials of the author to use for revisions.If you set this parameter and then make some changes to the document programmatically, save the document and later open the document in MS Word you will see these changes as revisions.
+     @param "revisionDateTime" (string) The date and time to use for revisions.
+     @param "insertBeforeNode" (string) Paragraph will be inserted before node with index.
+@return *os.File*/
+func (a *WordsApiService) InsertParagraphOnline(ctx context.Context, nodePath string, document *os.File, paragraph models.IParagraphInsert, localVarOptionals map[string]interface{}) (*http.Response, error) {
+    var (
+        localVarHttpMethod = strings.ToUpper("post")
+        localVarPostBody interface{}
+    )
+
+    // create path and map variables
+    localVarPath := "/words/online/{nodePath}/paragraphs"
+    localVarPath = strings.Replace(localVarPath, "{"+"nodePath"+"}", fmt.Sprintf("%v", nodePath), -1)
+
+    localVarPath = strings.Replace(localVarPath, "/<nil>", "", -1)
+    localVarPath = a.client.cfg.BaseUrl + strings.Replace(localVarPath, "//", "/", -1)
+
+    localVarHeaderParams := make(map[string]string)
+    localVarQueryParams := url.Values{}
+    localVarFormParams := make([]FormParamContainer, 0)
+
+    if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["destFileName"], "string", "destFileName"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["revisionAuthor"], "string", "revisionAuthor"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["revisionDateTime"], "string", "revisionDateTime"); err != nil {
+        return nil, err
+    }
+    if err := typeCheckParameter(localVarOptionals["insertBeforeNode"], "string", "insertBeforeNode"); err != nil {
+        return nil, err
     }
 
-    return successPayload, localVarHttpResponse, err
+
+    if localVarTempParam, localVarOk := localVarOptionals["loadEncoding"].(string); localVarOk {
+        localVarQueryParams.Add("LoadEncoding", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["password"].(string); localVarOk {
+        localVarQueryParams.Add("Password", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["destFileName"].(string); localVarOk {
+        localVarQueryParams.Add("DestFileName", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["revisionAuthor"].(string); localVarOk {
+        localVarQueryParams.Add("RevisionAuthor", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["revisionDateTime"].(string); localVarOk {
+        localVarQueryParams.Add("RevisionDateTime", parameterToString(localVarTempParam, ""))
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["insertBeforeNode"].(string); localVarOk {
+        localVarQueryParams.Add("InsertBeforeNode", parameterToString(localVarTempParam, ""))
+    }
+
+
+    // to determine the Content-Type header
+    localVarHttpContentTypes := []string{ "multipart/form-data", }
+
+    // set Content-Type header
+    localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
+    if localVarHttpContentType != "" {
+        localVarHeaderParams["Content-Type"] = localVarHttpContentType
+    }
+
+    // to determine the Accept header
+    localVarHttpHeaderAccepts := []string{
+        "application/xml",
+        "application/json",
+    }
+
+    // set Accept header
+    localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
+    if localVarHttpHeaderAccept != "" {
+        localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
+    }
+
+
+    _document := document
+    if _document != nil {
+        fbs, _ := ioutil.ReadAll(_document)
+        _document.Close()
+        localVarFormParams = append(localVarFormParams, NewFileFormParamContainer(_document.Name(), fbs))
+    }
+
+
+    localVarFormParams = append(localVarFormParams, NewTextFormParamContainer("Paragraph", parameterToString(paragraph, "")))
+
+
+    r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
+    if err != nil {
+        return nil, err
+    }
+
+    localVarHttpResponse, err := a.client.callAPI(r)
+    if err != nil || localVarHttpResponse == nil {
+        return localVarHttpResponse, err
+    }
+    if localVarHttpResponse.StatusCode == 401 {
+        defer localVarHttpResponse.Body.Close()
+        return nil, errors.New("Access is denied")
+    }
+    if localVarHttpResponse.StatusCode >= 300 {
+        defer localVarHttpResponse.Body.Close()
+
+        var apiError models.WordsApiErrorResponse;
+
+        if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
+            return localVarHttpResponse, err
+        }
+
+        return localVarHttpResponse, &apiError
+    }
+    return localVarHttpResponse, err
 }
 /* WordsApiService Adds paragraph to document, returns added paragraph's data.
  * @param ctx context.Context for authentication, logging, tracing, etc.
@@ -18340,12 +18959,11 @@ func (a *WordsApiService) InsertParagraph(ctx context.Context, name string, para
      @param "revisionAuthor" (string) Initials of the author to use for revisions.If you set this parameter and then make some changes to the document programmatically, save the document and later open the document in MS Word you will see these changes as revisions.
      @param "revisionDateTime" (string) The date and time to use for revisions.
      @param "insertBeforeNode" (string) Paragraph will be inserted before node with index.
-@return models.ParagraphResponse*/
-func (a *WordsApiService) InsertParagraphWithoutNodePath(ctx context.Context, name string, paragraph models.IParagraphInsert, localVarOptionals map[string]interface{}) (models.ParagraphResponse, *http.Response, error) {
+@return *os.File*/
+func (a *WordsApiService) InsertParagraphWithoutNodePath(ctx context.Context, name string, paragraph models.IParagraphInsert, localVarOptionals map[string]interface{}) (*http.Response, error) {
     var (
         localVarHttpMethod = strings.ToUpper("post")
         localVarPostBody interface{}
-        successPayload models.ParagraphResponse
     )
 
     // create path and map variables
@@ -18360,28 +18978,28 @@ func (a *WordsApiService) InsertParagraphWithoutNodePath(ctx context.Context, na
     localVarFormParams := make([]FormParamContainer, 0)
 
     if err := typeCheckParameter(localVarOptionals["folder"], "string", "folder"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["storage"], "string", "storage"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["loadEncoding"], "string", "loadEncoding"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["password"], "string", "password"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["destFileName"], "string", "destFileName"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["revisionAuthor"], "string", "revisionAuthor"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["revisionDateTime"], "string", "revisionDateTime"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
     if err := typeCheckParameter(localVarOptionals["insertBeforeNode"], "string", "insertBeforeNode"); err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
 
@@ -18451,16 +19069,16 @@ func (a *WordsApiService) InsertParagraphWithoutNodePath(ctx context.Context, na
     localVarPostBody = &paragraph
     r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
     if err != nil {
-        return successPayload, nil, err
+        return nil, err
     }
 
     localVarHttpResponse, err := a.client.callAPI(r)
     if err != nil || localVarHttpResponse == nil {
-        return successPayload, localVarHttpResponse, err
+        return localVarHttpResponse, err
     }
     if localVarHttpResponse.StatusCode == 401 {
         defer localVarHttpResponse.Body.Close()
-        return successPayload, nil, errors.New("Access is denied")
+        return nil, errors.New("Access is denied")
     }
     if localVarHttpResponse.StatusCode >= 300 {
         defer localVarHttpResponse.Body.Close()
@@ -18468,17 +19086,12 @@ func (a *WordsApiService) InsertParagraphWithoutNodePath(ctx context.Context, na
         var apiError models.WordsApiErrorResponse;
 
         if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
-            return successPayload, localVarHttpResponse, err
+            return localVarHttpResponse, err
         }
 
-        return successPayload, localVarHttpResponse, &apiError
+        return localVarHttpResponse, &apiError
     }
-    defer localVarHttpResponse.Body.Close()
-    if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&successPayload); err != nil {
-        return successPayload, localVarHttpResponse, err
-    }
-
-    return successPayload, localVarHttpResponse, err
+    return localVarHttpResponse, err
 }
 /* WordsApiService Adds run to document, returns added paragraph's data.
  * @param ctx context.Context for authentication, logging, tracing, etc.
@@ -22083,6 +22696,98 @@ func (a *WordsApiService) SaveAs(ctx context.Context, name string, saveOptionsDa
     }
 
     return successPayload, localVarHttpResponse, err
+}
+/* WordsApiService Converts document to destination format with detailed settings and saves result to storage.
+ * @param ctx context.Context for authentication, logging, tracing, etc.
+ @param document The document.
+ @param saveOptionsData Save options.
+ @param optional (nil or map[string]interface{}) with one or more of:
+     @param "fontsLocation" (string) Folder in filestorage with custom fonts.
+@return *os.File*/
+func (a *WordsApiService) SaveAsOnline(ctx context.Context, document *os.File, saveOptionsData models.ISaveOptionsData, localVarOptionals map[string]interface{}) (*http.Response, error) {
+    var (
+        localVarHttpMethod = strings.ToUpper("put")
+        localVarPostBody interface{}
+    )
+
+    // create path and map variables
+    localVarPath := "/words/online/saveAs"
+
+    localVarPath = strings.Replace(localVarPath, "/<nil>", "", -1)
+    localVarPath = a.client.cfg.BaseUrl + strings.Replace(localVarPath, "//", "/", -1)
+
+    localVarHeaderParams := make(map[string]string)
+    localVarQueryParams := url.Values{}
+    localVarFormParams := make([]FormParamContainer, 0)
+
+    if err := typeCheckParameter(localVarOptionals["fontsLocation"], "string", "fontsLocation"); err != nil {
+        return nil, err
+    }
+
+
+    if localVarTempParam, localVarOk := localVarOptionals["fontsLocation"].(string); localVarOk {
+        localVarQueryParams.Add("FontsLocation", parameterToString(localVarTempParam, ""))
+    }
+
+
+    // to determine the Content-Type header
+    localVarHttpContentTypes := []string{ "multipart/form-data", }
+
+    // set Content-Type header
+    localVarHttpContentType := selectHeaderContentType(localVarHttpContentTypes)
+    if localVarHttpContentType != "" {
+        localVarHeaderParams["Content-Type"] = localVarHttpContentType
+    }
+
+    // to determine the Accept header
+    localVarHttpHeaderAccepts := []string{
+        "application/xml",
+        "application/json",
+    }
+
+    // set Accept header
+    localVarHttpHeaderAccept := selectHeaderAccept(localVarHttpHeaderAccepts)
+    if localVarHttpHeaderAccept != "" {
+        localVarHeaderParams["Accept"] = localVarHttpHeaderAccept
+    }
+
+
+    _document := document
+    if _document != nil {
+        fbs, _ := ioutil.ReadAll(_document)
+        _document.Close()
+        localVarFormParams = append(localVarFormParams, NewFileFormParamContainer(_document.Name(), fbs))
+    }
+
+
+    localVarFormParams = append(localVarFormParams, NewTextFormParamContainer("SaveOptionsData", parameterToString(saveOptionsData, "")))
+
+
+    r, err := a.client.prepareRequest(ctx, localVarPath, localVarHttpMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams)
+    if err != nil {
+        return nil, err
+    }
+
+    localVarHttpResponse, err := a.client.callAPI(r)
+    if err != nil || localVarHttpResponse == nil {
+        return localVarHttpResponse, err
+    }
+    if localVarHttpResponse.StatusCode == 401 {
+        defer localVarHttpResponse.Body.Close()
+        return nil, errors.New("Access is denied")
+    }
+    if localVarHttpResponse.StatusCode >= 300 {
+        defer localVarHttpResponse.Body.Close()
+
+        var apiError models.WordsApiErrorResponse;
+
+        if err = json.NewDecoder(localVarHttpResponse.Body).Decode(&apiError); err != nil {
+            return localVarHttpResponse, err
+        }
+
+        return localVarHttpResponse, &apiError
+    }
+    return localVarHttpResponse, err
 }
 /* WordsApiService Saves the selected range as a new document.
  * @param ctx context.Context for authentication, logging, tracing, etc.

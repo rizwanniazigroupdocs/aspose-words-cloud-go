@@ -47,7 +47,23 @@ func Test_Paragraph_GetDocumentParagraphByIndex(t *testing.T) {
     options := map[string]interface{}{
         "folder": remoteDataFolder,
     }
-    _, _, err := client.WordsApi.GetParagraph(ctx, remoteFileName, "sections/0", int32(0), options)
+    _, err := client.WordsApi.GetParagraph(ctx, remoteFileName, "sections/0", int32(0), options)
+
+    if err != nil {
+        t.Error(err)
+    }
+}
+
+// Test for getting paragraph online.
+func Test_Paragraph_GetDocumentParagraphOnline(t *testing.T) {
+    config := ReadConfiguration(t)
+    client, ctx := PrepareTest(t, config)
+    localFile := "Common/test_multi_pages.docx"
+
+
+    options := map[string]interface{}{
+    }
+    _, err := client.WordsApi.GetParagraphOnline(ctx, "sections/0", OpenFile(t, localFile), int32(0), options)
 
     if err != nil {
         t.Error(err)
@@ -68,7 +84,7 @@ func Test_Paragraph_GetDocumentParagraphByIndexWithoutNodePath(t *testing.T) {
     options := map[string]interface{}{
         "folder": remoteDataFolder,
     }
-    _, _, err := client.WordsApi.GetParagraphWithoutNodePath(ctx, remoteFileName, int32(0), options)
+    _, err := client.WordsApi.GetParagraphWithoutNodePath(ctx, remoteFileName, int32(0), options)
 
     if err != nil {
         t.Error(err)
@@ -89,7 +105,23 @@ func Test_Paragraph_GetDocumentParagraphs(t *testing.T) {
     options := map[string]interface{}{
         "folder": remoteDataFolder,
     }
-    _, _, err := client.WordsApi.GetParagraphs(ctx, remoteFileName, "sections/0", options)
+    _, err := client.WordsApi.GetParagraphs(ctx, remoteFileName, "sections/0", options)
+
+    if err != nil {
+        t.Error(err)
+    }
+}
+
+// Test for getting all paragraphs online.
+func Test_Paragraph_GetDocumentParagraphsOnline(t *testing.T) {
+    config := ReadConfiguration(t)
+    client, ctx := PrepareTest(t, config)
+    localFile := "Common/test_multi_pages.docx"
+
+
+    options := map[string]interface{}{
+    }
+    _, err := client.WordsApi.GetParagraphsOnline(ctx, "sections/0", OpenFile(t, localFile), options)
 
     if err != nil {
         t.Error(err)
@@ -110,7 +142,7 @@ func Test_Paragraph_GetDocumentParagraphsWithoutNodePath(t *testing.T) {
     options := map[string]interface{}{
         "folder": remoteDataFolder,
     }
-    _, _, err := client.WordsApi.GetParagraphsWithoutNodePath(ctx, remoteFileName, options)
+    _, err := client.WordsApi.GetParagraphsWithoutNodePath(ctx, remoteFileName, options)
 
     if err != nil {
         t.Error(err)
@@ -222,7 +254,26 @@ func Test_Paragraph_InsertParagraph(t *testing.T) {
     options := map[string]interface{}{
         "folder": remoteDataFolder,
     }
-    _, _, err := client.WordsApi.InsertParagraph(ctx, remoteFileName, requestParagraph, "sections/0", options)
+    _, err := client.WordsApi.InsertParagraph(ctx, remoteFileName, "sections/0", requestParagraph, options)
+
+    if err != nil {
+        t.Error(err)
+    }
+}
+
+// Test for adding paragraph online.
+func Test_Paragraph_InsertParagraphOnline(t *testing.T) {
+    config := ReadConfiguration(t)
+    client, ctx := PrepareTest(t, config)
+    localFile := "Common/test_multi_pages.docx"
+
+    requestParagraph := models.ParagraphInsert{
+        Text: "This is a new paragraph for your document",
+    }
+
+    options := map[string]interface{}{
+    }
+    _, err := client.WordsApi.InsertParagraphOnline(ctx, "sections/0", OpenFile(t, localFile), requestParagraph, options)
 
     if err != nil {
         t.Error(err)
@@ -246,7 +297,7 @@ func Test_Paragraph_InsertParagraphWithoutNodePath(t *testing.T) {
     options := map[string]interface{}{
         "folder": remoteDataFolder,
     }
-    _, _, err := client.WordsApi.InsertParagraphWithoutNodePath(ctx, remoteFileName, requestParagraph, options)
+    _, err := client.WordsApi.InsertParagraphWithoutNodePath(ctx, remoteFileName, requestParagraph, options)
 
     if err != nil {
         t.Error(err)
@@ -376,6 +427,22 @@ func Test_Paragraph_DeleteParagraph(t *testing.T) {
         "folder": remoteDataFolder,
     }
     _, err := client.WordsApi.DeleteParagraph(ctx, remoteFileName, "", int32(0), options)
+
+    if err != nil {
+        t.Error(err)
+    }
+}
+
+// Test for deleting  a paragraph online.
+func Test_Paragraph_DeleteParagraphOnline(t *testing.T) {
+    config := ReadConfiguration(t)
+    client, ctx := PrepareTest(t, config)
+    localFile := "Common/test_multi_pages.docx"
+
+
+    options := map[string]interface{}{
+    }
+    _, err := client.WordsApi.DeleteParagraphOnline(ctx, "", OpenFile(t, localFile), int32(0), options)
 
     if err != nil {
         t.Error(err)
