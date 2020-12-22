@@ -4,8 +4,6 @@
 [Aspose.Wors Cloud SDK for Go](https://products.aspose.cloud/words/go) wraps Aspose.Words REST API so you could seamlessly integrate Microsoft Word® document generation, manipulation, conversion & inspection features into your own Go applications.
 Feel free to explore the [Developer's Guide](https://docs.aspose.cloud/display/wordscloud/Developer+Guide) & [API Reference](https://apireference.aspose.cloud/words/) to know all about Aspose.Words Cloud API. 
 
-[Aspose.Words Cloud](https://products.aspose.cloud/words/family "Aspose.Words Cloud")  
-[API Reference](https://apireference.aspose.cloud/words/)  
 ## Document Processing Services in REST
 
 - Convert between various document-related formats, including Word to PDF & vice versa.
@@ -67,21 +65,6 @@ Check out the [Developer's Guide](https://docs.aspose.cloud/display/wordscloud/D
 - Added 'Markdown' save format
 - Added endpoint to update paragraph format without node path (PUT '/words/{name}/paragraphs/{index}/format')
 
-
-## Read & Write Document Formats
-
-**Microsoft Word:** DOC, DOCX, RTF, DOT, DOTX, DOTM, FlatOPC (XML)
-**OpenOffice:** ODT, OTT
-**WordprocessingML:** XML
-**Web:** HTML, MHTML, HtmlFixed
-**Text:** TXT
-**Fixed Layout:** PDF
-
-## Save Document As
-
-**Fixed Layout:** PDF/A, XPS, OpenXPS, PS
-**Images:** JPEG, PNG, BMP, SVG, TIFF, EMF
-**Others:** PCL
 
 ## Getting Started with Aspose.Words Cloud SDK for Go
 
